@@ -1,6 +1,7 @@
 ﻿@using runningClob.Data.Enum
 @using runningClob.Services
 @model runningClob.ViewModels.CreateClubViewModel
+@inject ICountryAliasService CountryAliasService
 @{
     ViewData["Title"] = "Create Club";
 }
@@ -43,10 +44,19 @@
         <label asp-for="Country">Country</label>
         <select asp-for="Country" class="form-control">
             <option value="">Select Country</option>
-            @foreach (var country in CountryService.GetCommonCountryNames())
+            @foreach (var country in CountryAliasService.GetCountryAliases("US")
+                        .Concat(CountryAliasService.GetCountryAliases("GB"))
+                        .Concat(CountryAliasService.GetCountryAliases("CA"))
+                        .Concat(CountryAliasService.GetCountryAliases("AU"))
+                        .Concat(CountryAliasService.GetCountryAliases("EG"))
+                        .Concat(CountryAliasService.GetCountryAliases("SA"))
+                        .Concat(CountryAliasService.GetCountryAliases("AE"))
+                        .Distinct()
+                        .OrderBy(c => c))
             {
                 <option value="@country">@country</option>
             }
+            
         </select>
         <span asp-validation-for="Country" class="text-danger"></span>
     </div>

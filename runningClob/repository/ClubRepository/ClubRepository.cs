@@ -292,26 +292,84 @@ namespace runningClob.repository.ClubRepository
         {
             try
             {
-                var countryCode = _countryAliasService.NormalizeCountry(country);
+                _logger.LogInformation("🔍 REPOSITORY: Starting search for: '{Country}'", country);
 
-                _logger.LogInformation("Searching clubs for country: {Country} -> {CountryCode}",
-                    country, countryCode);
+                if (string.IsNullOrWhiteSpace(country))
+                {
+                    _logger.LogWarning("🔍 REPOSITORY: Country parameter is empty");
+                    return new List<Club>();
+                }
 
-                return await _context.Clubs
+                // STEP 1: Normalize the search country
+                var searchCountryCode = _countryAliasService.NormalizeCountry(country);
+                _logger.LogInformation("🔍 REPOSITORY: Normalized search country: '{SearchCountryCode}'", searchCountryCode);
+
+                // STEP 2: Get ALL clubs with addresses (no filtering yet)
+                var allClubs = await _context.Clubs
                     .Include(c => c.Address)
-                    .Where(c => c.Address != null &&
-                               c.Address.Country != null &&
-                               _countryAliasService.NormalizeCountry(c.Address.Country) == countryCode)
+                    .Where(c => c.Address != null) // Only clubs with addresses
                     .AsNoTracking()
                     .ToListAsync();
+
+                _logger.LogInformation("🔍 REPOSITORY: Retrieved {Count} clubs with addresses", allClubs.Count);
+
+                // STEP 3: Filter in memory (more reliable than complex LINQ)
+                var filteredClubs = allClubs
+                    .Where(c =>
+                    {
+                        if (string.IsNullOrEmpty(c.Address.Country))
+                            return false;
+
+                        // Normalize each club's country and compare
+                        var clubCountryCode = _countryAliasService.NormalizeCountry(c.Address.Country);
+                        return clubCountryCode == searchCountryCode;
+                    })
+                    .ToList();
+
+                _logger.LogInformation("🔍 REPOSITORY: Found {FilteredCount} clubs matching '{SearchCountryCode}'",
+                    filteredClubs.Count, searchCountryCode);
+
+                // STEP 4: Debug logging - show what we found
+                if (filteredClubs.Any())
+                {
+                    _logger.LogInformation("🔍 REPOSITORY: Matching clubs:");
+                    foreach (var club in filteredClubs)
+                    {
+                        var clubCountryCode = _countryAliasService.NormalizeCountry(club.Address.Country);
+                        _logger.LogInformation("   ✅ ID: {Id}, Title: {Title}, Country: '{Country}' -> '{Code}'",
+                            club.Id, club.Title, club.Address.Country, clubCountryCode);
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("🔍 REPOSITORY: NO CLUBS FOUND for '{SearchCountryCode}'", searchCountryCode);
+
+                    // Log what countries we actually have for debugging
+                    var availableCountries = allClubs
+                        .Where(c => !string.IsNullOrEmpty(c.Address.Country))
+                        .Select(c => new {
+                            Original = c.Address.Country,
+                            Normalized = _countryAliasService.NormalizeCountry(c.Address.Country)
+                        })
+                        .Distinct()
+                        .ToList();
+
+                    _logger.LogInformation("🔍 REPOSITORY: Available countries in database:");
+                    foreach (var countryInfo in availableCountries)
+                    {
+                        _logger.LogInformation("   - '{Original}' -> '{Normalized}'",
+                            countryInfo.Original, countryInfo.Normalized);
+                    }
+                }
+
+                return filteredClubs;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting clubs by country: {Country}", country);
+                _logger.LogError(ex, "❌ REPOSITORY: Error in GetClubsByCountryAsync for '{Country}'", country);
                 return new List<Club>();
             }
         }
-
 
         public async Task<IEnumerable<Club>> GetClubsByProgressiveLocationAsync(string country, string state = null, string city = null)
         {

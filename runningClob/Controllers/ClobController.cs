@@ -69,91 +69,7 @@ public class ClobController : Controller
             throw;
         }
     }
-    [HttpGet]
-    public async Task<List<Club>> GetClubsByCountryAsync(string country)
-    {
-        try
-        {
-            _logger.LogInformation("🔍 REPOSITORY: Searching for country: '{Country}'", country);
-
-            // Normalize the input country
-            var normalizedCountry = CountryService.NormalizeCountry(country);
-            _logger.LogInformation("🔍 REPOSITORY: Normalized country: '{NormalizedCountry}'", normalizedCountry);
-
-            // Get ALL clubs with addresses first to debug
-            var allClubs = await _context.Clubs
-                .Include(c => c.Address)
-                .Where(c => c.Address != null)
-                .AsNoTracking()
-                .ToListAsync();
-
-            _logger.LogInformation("🔍 REPOSITORY: Total clubs with addresses: {Count}", allClubs.Count);
-
-            // Log what countries we actually have in the database
-            var distinctCountries = allClubs
-                .Where(c => c.Address.Country != null)
-                .Select(c => new {
-                    Original = c.Address.Country,
-                    Normalized = CountryService.NormalizeCountry(c.Address.Country)
-                })
-                .Distinct()
-                .ToList();
-
-            _logger.LogInformation("🔍 REPOSITORY: Countries in database:");
-            foreach (var countryInfo in distinctCountries)
-            {
-                _logger.LogInformation("   - '{Original}' -> '{Normalized}'",
-                    countryInfo.Original, countryInfo.Normalized);
-            }
-
-            // Now filter by the normalized country
-            var filteredClubs = allClubs
-                .Where(c => c.Address.Country != null &&
-                           CountryService.NormalizeCountry(c.Address.Country) == normalizedCountry)
-                .ToList();
-
-            _logger.LogInformation("🔍 REPOSITORY: Found {FilteredCount} clubs after filtering for '{NormalizedCountry}'",
-                filteredClubs.Count, normalizedCountry);
-
-            // Log the actual clubs that were found (or not found)
-            if (filteredClubs.Any())
-            {
-                _logger.LogInformation("🔍 REPOSITORY: Matching clubs:");
-                foreach (var club in filteredClubs)
-                {
-                    _logger.LogInformation("   - ID: {Id}, Title: {Title}, Country: {Country} -> {Normalized}",
-                        club.Id, club.Title, club.Address.Country,
-                        CountryService.NormalizeCountry(club.Address.Country));
-                }
-            }
-            else
-            {
-                _logger.LogWarning("🔍 REPOSITORY: NO CLUBS FOUND for country '{NormalizedCountry}'", normalizedCountry);
-
-                // Let's see what's close to help debug
-                var similarCountries = allClubs
-                    .Where(c => c.Address.Country != null)
-                    .Select(c => CountryService.NormalizeCountry(c.Address.Country))
-                    .Where(c => c.Contains(normalizedCountry) || normalizedCountry.Contains(c))
-                    .Distinct()
-                    .ToList();
-
-                if (similarCountries.Any())
-                {
-                    _logger.LogInformation("🔍 REPOSITORY: Similar countries found: {SimilarCountries}",
-                        string.Join(", ", similarCountries));
-                }
-            }
-
-            return filteredClubs;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "❌ REPOSITORY: Error getting clubs by country: {Country}", country);
-            return new List<Club>();
-        }
-    }
-
+ 
     // Updated ClubController Create method
     [HttpGet]
     public async Task<IActionResult> Create()
@@ -222,10 +138,10 @@ public class ClobController : Controller
 
             try
             {
-                var normalizedCountry = CountryService.NormalizeCountry(clubVM.Country);
+            var normalizedCountry = _countryAliasService.NormalizeCountry(clubVM.Country);
 
-                // Your existing creation logic here...
-                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            // Your existing creation logic here...
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
                 if (string.IsNullOrEmpty(currentUserId))
                 {
@@ -530,5 +446,44 @@ public class ClobController : Controller
         }
 
         return Json(new { success = false });
+    }
+    [HttpGet]
+    public async Task<IActionResult> GetClubsByCountryAsync(string country)
+    {
+        _logger.LogInformation("🎯 SIMPLE FILTER: Searching for clubs in: '{Country}'", country);
+
+        // If no country specified, show empty page with form
+        if (string.IsNullOrWhiteSpace(country))
+        {
+            _logger.LogInformation("🎯 SIMPLE FILTER: No country specified, showing filter form");
+            return View(new List<Club>());
+        }
+
+        try
+        {
+            _logger.LogInformation("🎯 SIMPLE FILTER: Calling repository with: '{Country}'", country);
+
+            // Use the repository method
+            var clubs = await _clubRepository.GetClubsByCountryAsync(country);
+
+            _logger.LogInformation("🎯 SIMPLE FILTER: Repository returned {Count} clubs", clubs?.Count() ?? 0);
+
+            if (clubs == null || !clubs.Any())
+            {
+                _logger.LogWarning("🎯 SIMPLE FILTER: No clubs found for '{Country}'", country);
+                ViewBag.Message = $"No clubs found in {country}";
+                return View(new List<Club>());
+            }
+
+            _logger.LogInformation("🎯 SIMPLE FILTER: Success! Found {Count} clubs in '{Country}'", clubs.Count(), country);
+            ViewBag.Message = $"Found {clubs.Count()} clubs in {country}";
+            return View(clubs);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ SIMPLE FILTER: Error searching for clubs in '{Country}'", country);
+            ViewBag.Message = "An error occurred while searching for clubs";
+            return View(new List<Club>());
+        }
     }
 }
