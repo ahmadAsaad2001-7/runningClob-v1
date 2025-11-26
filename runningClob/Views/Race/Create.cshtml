@@ -1,0 +1,63 @@
+﻿@using runningClob.Data.Enum
+@model runningClob.ViewModels.CreateRaceViewModel
+@{
+    ViewData["Title"] = "Create Race";
+}
+
+<form method="post" asp-action="Create" enctype="multipart/form-data">
+
+    <div class="form-group">
+        <label asp-for="Title">Title</label>
+        <input asp-for="Title" class="form-control" placeholder="Enter Race title">
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Description">Description</label>
+        <textarea asp-for="Description" class="form-control" placeholder="Enter Race description"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="RaceCategory">Category</label>
+        <select asp-for="RaceCategory" asp-items="@Html.GetEnumSelectList<RaceCategory>()" class="form-control">
+            <option value="">== Select Category ==</option>
+        </select>
+        <span asp-validation-for="RaceCategory" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Image">Image</label>
+        <input asp-for="Image" type="file" class="form-control" placeholder="Image">
+        <span asp-validation-for="Image" class="text-danger"></span>
+    </div>    <h5>Address Information</h5>
+
+    <div class="form-group">
+        <label asp-for="Street">Street</label>
+        <input asp-for="Street" class="form-control" placeholder="Enter street address">
+        <span asp-validation-for="Street" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Country">country</label>
+        <input asp-for="Country" class="form-control" placeholder="enter country"></input>
+        <span asp-validation-for="Country" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="City">City</label>
+        <input asp-for="City" class="form-control" placeholder="Enter city">
+        <span asp-validation-for="City" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="State">State</label>
+        <input asp-for="State" class="form-control" placeholder="Enter state">
+        <span asp-validation-for="State" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="ZipCode">Zip Code</label>
+        <input asp-for="ZipCode" class="form-control" placeholder="Enter zip code">
+        <span asp-validation-for="ZipCode" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create Race</button>
+</form>

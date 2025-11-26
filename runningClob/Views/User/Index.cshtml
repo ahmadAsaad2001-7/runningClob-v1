@@ -1,0 +1,72 @@
+﻿@model List<runningClob.ViewModels.UserVm>
+
+@{
+    ViewData["Title"] = "All Users";
+}
+
+<div class="row" id="usersContainer">
+    @if (Model.Any())
+    {
+        @foreach (var user in Model)
+        {
+            <div class="col-md-6 col-lg-4 mb-4 user-card">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h5 class="card-title">@user.UserName</h5>
+                            @if (User.IsInRole("Admin"))
+                            {
+
+                                <span class="badge bg-info">ID: @user.Id</span>
+                            }
+</div>
+
+                        <div class="user-stats">
+                            <div class="mb-2">
+                                <strong>Pace:</strong>
+                                <span class="text-success">@user.pace min/mile</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Mileage:</strong>
+                                <span class="text-primary">@user.Mileage miles</span>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <a asp-action="Detail" asp-route-id="@user.Id"
+                               class="btn btn-outline-primary btn-sm">
+                                View Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <h4>No Users Found</h4>
+                <p>There are no users in the system yet.</p>
+            </div>
+        </div>
+    }
+</div>
+@section Scripts {
+    <script>
+        document.getElementById('searchButton').addEventListener('click', function() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const userCards = document.querySelectorAll('.user-card');
+
+            userCards.forEach(card => {
+                const userName = card.querySelector('.card-title').textContent.toLowerCase();
+                if (userName.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    </script>
+}

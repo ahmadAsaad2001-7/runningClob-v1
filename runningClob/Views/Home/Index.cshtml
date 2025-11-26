@@ -1,0 +1,153 @@
+﻿@model runningClob.ViewModels.HomeViewModel
+
+@{
+    ViewData["Title"] = "Running Clubs - Find Clubs Near You";
+}
+
+<style>
+    .jumbotron {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    }
+
+    .card {
+        transition: transform 0.2s;
+    }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+    .club-details i {
+        width: 16px;
+        margin-right: 5px;
+    }
+
+    .location-badge {
+        font-size: 1.1rem;
+    }
+
+    .country-flag {
+        font-size: 1.2em;
+        margin-right: 5px;
+    }
+</style>
+
+<!-- API Status Messages -->
+@if (TempData["LocationMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle"></i> @TempData["LocationMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["LocationError"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle"></i> @TempData["LocationError"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["TestLocation"] != null)
+{
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <i class="fas fa-info-circle"></i> @TempData["TestLocation"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="container mt-4">
+    <!-- Main Header -->
+    <div class="jumbotron bg-primary text-white rounded p-4 mb-4">
+        <h1 class="display-4">🏃‍♂️ Running Clubs</h1>
+
+        <!-- Dynamic heading based on country -->
+        @if (Model.HasValidCountry)
+        {
+            <p class="lead">Running clubs in <strong>@Model.Country</strong></p>
+        }
+        else
+        {
+            <p class="lead">Popular running clubs worldwide</p>
+        }
+
+        <!-- Location Information -->
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <div class="location-badge">
+                    <i class="fas fa-globe"></i>
+                    <strong>Your Location:</strong>
+                    <span class="badge bg-light text-dark fs-6">
+                        @Model.LocationDescription
+                    </span>
+                </div>
+            </div>
+            @if (User.IsInRole("Admin"))
+            {
+                <div class="col-md-6">
+                    <div class="location-badge">
+                        <i class="fas fa-network-wired"></i>
+                        <strong>IP Address:</strong>
+                        <span class="badge bg-info fs-6">@Model.IPAddress</span>
+                    </div>
+                </div>
+            }
+        </div> <!-- Fixed: Added closing div for row -->
+        <!-- API Testing Controls -->
+        <div class="mt-3">
+            <form method="post" asp-action="RefreshLocation" class="d-inline">
+                <button type="submit" class="btn btn-light btn-sm">
+                    <i class="fas fa-sync-alt"></i> Refresh Location
+                </button>
+            </form>
+
+            <form method="post" asp-action="TestIPLocation" class="d-inline ms-2">
+                <div class="input-group input-group-sm" style="width: 250px;">
+                    <input type="text" name="testIP" class="form-control" placeholder="Test IP (e.g., 8.8.8.8)">
+                    <button type="submit" class="btn btn-outline-light">Test</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Rest of your view remains the same -->
+    <!-- ... -->
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add click tracking for analytics
+            const clubCards = document.querySelectorAll('.card');
+            clubCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    const clubTitle = this.querySelector('.card-title').textContent;
+                    console.log('Club viewed:', clubTitle);
+                });
+            });
+
+            // Auto-refresh location every 5 minutes
+            setInterval(() => {
+                console.log('Location would be refreshed here...');
+            }, 300000);
+
+            // API interaction examples
+            console.log('IPInfo API Integration Active');
+
+            // Example: Log API response details
+            @if (ViewBag.Latitude != null)
+            {
+                    <text>
+                    console.log('Geolocation Details:', {
+                        latitude: '@ViewBag.Latitude',
+                        longitude: '@ViewBag.Longitude',
+                        timezone: '@ViewBag.Timezone',
+                        isp: '@ViewBag.ISP'
+                    });
+                    </text>
+            }
+        });
+    </script>
+}

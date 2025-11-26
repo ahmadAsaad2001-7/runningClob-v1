@@ -1,0 +1,247 @@
+﻿@model runningClob.Models.Race
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="main-container">
+    <nav aria-label="breadcrumb" role="navigation" class="bg-primary text-white">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                        <li class="breadcrumb-item"><a asp-controller="Race" asp-action="Index">Races</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">@Model.Title in @Model.Address?.City, @Model.Address?.State</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="bg-white space-sm">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-7 mb-4 mb-sm-0">
+                    @if (!string.IsNullOrEmpty(Model.Image))
+                    {
+                        <img alt="@Model.Title" src="@Model.Image" class="rounded img-fluid" style="object-fit: cover; height: 100%; max-height: 400px; width: 100%;" />
+                    }
+                    else
+                    {
+                        <div class="rounded img-fluid bg-light d-flex justify-content-center align-items-center" style="height: 400px; width: 100%;">
+                            <span class="text-muted">No image available</span>
+                        </div>
+                    }
+                </div>
+                <div class="col-lg-4 d-flex flex-column justify-content-between ml-auto">
+                    <div>
+                        <h1 class="mb-2">@Model.Title</h1>
+                        <div class="lead mb-3">
+                            @if (Model.StartTime.HasValue)
+                            {
+                                <div><i class="icon-calendar mr-2"></i>@Model.StartTime.Value.ToString("MMMM dd, yyyy")</div>
+                            }
+                            <div><i class="icon-location mr-2"></i>@Model.Address?.City, @Model.Address?.State</div>
+                        </div>
+                        <div class="mb-3">
+                            <span class="badge badge-secondary">@Model.RaceCategory</span>
+                            @if (Model.EntryFee.HasValue)
+                            {
+                                <span class="badge badge-info ml-2">@Model.EntryFee.Value.ToString("C")</span>
+                            }
+                        </div>
+                    </div>
+                    <div>
+                        <div class="btn-group mb-2">
+                            @if (Model.StartTime > DateTime.Now)
+                            {
+                                <a href="#" class="btn btn-success btn-lg">Register Now</a>
+                            }
+                            else
+                            {
+                                <button class="btn btn-secondary btn-lg" disabled>Race Completed</button>
+                            }
+                            <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
+                                <span class="sr-only">Toggle Dropdown</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                @if (!string.IsNullOrEmpty(Model.Website))
+                                {
+                                    <a class="dropdown-item" href="@Model.Website" target="_blank"><i class="icon-globe"></i> Visit Website</a>
+                                }
+                                @if (!string.IsNullOrEmpty(Model.Contact))
+                                {
+                                    <a class="dropdown-item" href="mailto:@Model.Contact"><i class="icon-mail"></i> Contact</a>
+                                }
+                                @if (User.Identity.IsAuthenticated && (User.IsInRole("admin") || User.Identity.Name == Model.AppUser?.UserName))
+                                {
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" asp-action="Edit" asp-route-id="@Model.Id"><i class="icon-edit"></i> Edit Race</a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="space-sm">
+        <div class="container">
+            <div class="row justify-content-between">
+                <div class="col-12 col-md-8 col-lg-7">
+                    <h5 class="mb-4">About This Race</h5>
+                    <article class="mb-4">
+                        @Html.Raw(Model.Description)
+                    </article>
+
+                    <div class="row mb-4">
+                        @if (Model.StartTime.HasValue)
+                        {
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6><i class="icon-clock text-primary mr-2"></i>Race Schedule</h6>
+                                        <dl class="mb-0">
+                                            <dt>Start Time</dt>
+                                            <dd>@Model.StartTime.Value.ToString("f")</dd>
+                                            @if (Model.StartTime.Value.Date != DateTime.Today)
+                                            {
+                                                <dt>Days Until Race</dt>
+                                                <dd>@((Model.StartTime.Value.Date - DateTime.Today).Days) days</dd>
+                                            }
+                                        </dl>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h6><i class="icon-location text-primary mr-2"></i>Location</h6>
+                                    <address class="mb-0">
+                                        @Model.Address?.Street<br>
+                                        @Model.Address?.City, @Model.Address?.State @Model.Address?.ZipCode<br>
+                                        <div id="map" style="height: 150px; width: 100%; margin-top: 10px; background-color: #eee;"></div>
+                                    </address>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mb-4">Connect With Us</h5>
+                    <div class="mb-4">
+                        <div class="btn-group">
+                            @if (!string.IsNullOrEmpty(Model.Facebook))
+                            {
+                                <a href="@Model.Facebook" class="btn btn-outline-primary" target="_blank"><i class="icon-facebook"></i> Facebook</a>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.Twitter))
+                            {
+                                <a href="@Model.Twitter" class="btn btn-outline-info" target="_blank"><i class="icon-twitter"></i> Twitter</a>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.Website))
+                            {
+                                <a href="@Model.Website" class="btn btn-outline-secondary" target="_blank"><i class="icon-globe"></i> Website</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h6 class="mb-3">Race Organizer</h6>
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="https://ui-avatars.com/api/?name=@Model.AppUser?.UserName&background=random" class="rounded-circle mr-3" width="50" alt="Organizer">
+                                <div>
+                                    <strong>@Model.AppUser?.UserName</strong>
+                                    @if (!string.IsNullOrEmpty(Model.Contact))
+                                    {
+                                        <div><small><a href="mailto:@Model.Contact">@Model.Contact</a></small></div>
+                                    }
+                                </div>
+                            </div>
+                            <a href="@(!string.IsNullOrEmpty(Model.Contact) ? $"mailto:{Model.Contact}" : "#")"
+                               class="btn btn-outline-primary btn-sm btn-block @(string.IsNullOrEmpty(Model.Contact) ? "disabled" : "")">
+                                <i class="icon-mail"></i> Contact Organizer
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <h6 class="mb-3">Race Information</h6>
+                            <ul class="list-unstyled">
+                                @if (Model.EntryFee.HasValue)
+                                {
+                                    <li class="mb-2"><i class="icon-credit-card mr-2"></i> Entry Fee: @Model.EntryFee.Value.ToString("C")</li>
+                                }
+                                <li class="mb-2"><i class="icon-tag mr-2"></i> Category: @Model.RaceCategory</li>
+                                <li><i class="icon-shield mr-2"></i> Organizer: @Model.AppUser?.UserName</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="mb-3">Quick Links</h6>
+                            <div class="list-group list-group-flush">
+                                @if (!string.IsNullOrEmpty(Model.Website))
+                                {
+                                    <a href="@Model.Website" class="list-group-item list-group-item-action" target="_blank">
+                                        <i class="icon-globe mr-2"></i>Official Website
+                                    </a>
+                                }
+                                <a href="#" class="list-group-item list-group-item-action">
+                                    <i class="icon-download mr-2"></i>Race Packet
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action">
+                                    <i class="icon-map mr-2"></i>Course Map
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        // Initialize map if address exists
+        @if (Model.Address != null)
+        {
+            <text>
+                    function initMap() {
+                        // Map initialization would go here
+                        console.log("Map would show location:", "@Model.Address.ToString()");
+                        }
+                    document.addEventListener('DOMContentLoaded', initMap);
+            </text>
+        }
+
+            // Countdown timer for race day
+        @if (Model.StartTime.HasValue && Model.StartTime > DateTime.Now)
+        {
+            <text>
+                    function updateCountdown() {
+                            const raceDate = new Date("@Model.StartTime.Value.ToString("o")");
+                    const now = new Date();
+                    const diff = raceDate - now;
+
+                    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+                    document.getElementById('countdown').innerHTML = `
+                    ${days} days and ${hours} hours until race day!
+                    `;
+                        }
+                    setInterval(updateCountdown, 3600000); // Update every hour
+                    updateCountdown(); // Initial call
+            </text>
+        }
+    </script>
+}

@@ -1,0 +1,191 @@
+﻿@model IEnumerable<runningClob.Models.Club>
+
+<main>
+    <section class="py-5 text-center container">
+        <div class="row py-lg-5">
+            <div class="col-lg-6 col-md-8 mx-auto">
+                <h1 class="fw-light">Running clubs</h1>
+                <p class="lead text-body-secondary">Find running clubs in your area and join the community!</p>
+                <p>
+                    <a asp-controller="clob" asp-action="Create" class="btn btn-primary my-2">Create New club</a>
+
+                    <!-- Auto-detect location button -->
+                    <button id="findNearMe" class="btn btn-secondary my-2">
+                        <i class="fas fa-map-marker-alt"></i> Find Clubs Near Me
+                    </button>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Country Filter Section -->
+    <div class="container mb-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Filter Clubs by Country</h5>
+                        <form id="countryFilterForm" class="row g-3">
+                            <div class="col-md-8">
+                                <select id="countrySelect" name="country" class="form-control" required>
+                                    <option value="">Choose a country...</option>
+                                    <option value="US">United States</option>
+                                    <option value="GB">United Kingdom</option>
+                                    <option value="CA">Canada</option>
+                                    <option value="AU">Australia</option>
+                                    <option value="SA">Saudi Arabia</option>
+                                    <option value="AE">United Arab Emirates</option>
+                                    <option value="QA">Qatar</option>
+                                    <option value="EG">Egypt</option>
+                                    <option value="KW">Kuwait</option>
+                                    <option value="BH">Bahrain</option>
+                                    <option value="OM">Oman</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search"></i> Filter Clubs
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Container -->
+    <div class="album py-5 bg-body-tertiary">
+        <div class="container">
+            <!-- Filter Status Message -->
+            <div id="filterMessage" class="alert alert-info d-none mb-4"></div>
+
+            <!-- Clubs Container -->
+            <div id="clubsContainer">
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3">
+                    @foreach (var club in Model)
+                    {
+                        <div class="col">
+                            <div class="card shadow-sm">
+                                @if (!string.IsNullOrEmpty(club.Image))
+                                {
+                                    <img class="bd-placeholder-img card-img-top" height="225" src="@club.Image" alt="@club.Title" />
+                                }
+                                else
+                                {
+                                    <svg class="bd-placeholder-img card-img-top" width="100%" height="225" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Placeholder: Thumbnail" preserveAspectRatio="xMidYMid slice" focusable="false">
+                                        <title>Placeholder</title>
+                                        <rect width="100%" height="100%" fill="#55595c"></rect>
+                                        <text x="50%" y="50%" fill="#eceeef" dy=".3em">No Image</text>
+                                    </svg>
+                                }
+                                <div class="card-body">
+                                    <h5 class="card-title">@club.Title</h5>
+                                    <p class="card-text">@club.Description</p>
+                                    <p class="text-muted">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        @club.Address?.City, @club.Address?.Country
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="btn-group">
+                                            <a asp-controller="clob" asp-action="Detail" asp-route-id="@club.Id" class="btn btn-sm btn-outline-secondary">View</a>
+                                            <a asp-controller="clob" asp-action="Edit" asp-route-id="@club.Id" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                            <a asp-controller="clob" asp-action="Delete" asp-route-id="@club.Id" class="btn btn-sm btn-outline-secondary">Delete</a>
+                                        </div>
+                                        <small class="text-body-secondary">@club.ClubCategory</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const filterForm = document.getElementById('countryFilterForm');
+            const countrySelect = document.getElementById('countrySelect');
+            const clubsContainer = document.getElementById('clubsContainer');
+            const filterMessage = document.getElementById('filterMessage');
+            const findNearMeBtn = document.getElementById('findNearMe');
+
+            // Handle form submission
+            filterForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const country = countrySelect.value;
+
+                if (!country) {
+                    showMessage('Please select a country', 'warning');
+                    return;
+                }
+
+                filterClubsByCountry(country);
+            });
+
+            // Handle "Find Near Me" button
+            findNearMeBtn.addEventListener('click', function() {
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Detecting location...';
+                this.disabled = true;
+
+                // Call your backend to get location
+                fetch('@Url.Action("GetUserCountry", "Clob")')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.country) {
+                            countrySelect.value = data.country;
+                            filterClubsByCountry(data.country);
+                            showMessage(`Showing clubs in ${data.countryName || data.country}`, 'info');
+                        } else {
+                            showMessage('Could not detect your location. Please select a country manually.', 'warning');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error detecting location:', error);
+                        showMessage('Error detecting location. Please select a country manually.', 'danger');
+                    })
+                    .finally(() => {
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    });
+            });
+
+            function filterClubsByCountry(country) {
+                showMessage('<i class="fas fa-spinner fa-spin"></i> Searching for clubs...', 'info');
+
+                fetch(`@Url.Action("FilterClubsByCountry", "Clob")?country=${country}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.text();
+                    })
+                    .then(html => {
+                        clubsContainer.innerHTML = html;
+                        showMessage(`Showing clubs in ${country}`, 'success');
+                    })
+                    .catch(error => {
+                        console.error('Error filtering clubs:', error);
+                        showMessage('Error loading clubs. Please try again.', 'danger');
+                    });
+            }
+
+            function showMessage(message, type) {
+                filterMessage.className = `alert alert-${type} mb-4`;
+                filterMessage.innerHTML = message;
+                filterMessage.classList.remove('d-none');
+
+                // Auto-hide success messages after 5 seconds
+                if (type === 'success') {
+                    setTimeout(() => {
+                        filterMessage.classList.add('d-none');
+                    }, 5000);
+                }
+            }
+        });
+    </script>
+}

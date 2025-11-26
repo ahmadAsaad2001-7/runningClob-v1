@@ -1,0 +1,158 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - runningClob</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/runningClob.styles.css" asp-append-version="true" />
+    <style>
+        .logout-btn {
+            border: 2px solid #dc3545 !important;
+            background: linear-gradient(90deg, transparent 50%, transparent 50%) !important;
+            background-size: 200% 100% !important;
+            background-position: right bottom !important;
+            color: #dc3545 !important;
+            transition: all 0.6s ease-in-out !important;
+            padding: 0.375rem 0.75rem !important;
+            border-radius: 0.375rem !important;
+            text-decoration: none !important;
+            display: inline-block !important;
+            position: relative !important;
+            overflow: hidden !important;
+        }
+
+            .logout-btn:hover {
+                border-color: #c82333 !important;
+                color: #c82333 !important;
+                transform: translateY(-2px) !important;
+                box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3) !important;
+            }
+
+            .logout-btn:active,
+            .logout-btn.clicked {
+                border-color: #28a745 !important;
+                background-position: left bottom !important;
+                background: #28a745 !important;
+                color: white !important;
+                transform: translateY(0) !important;
+                box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3) !important;
+            }
+
+            /* Ripple effect */
+            .logout-btn::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 0;
+                height: 0;
+                border-radius: 50%;
+                background: rgba(40, 167, 69, 0.3);
+                transform: translate(-50%, -50%);
+                transition: width 0.6s, height 0.6s;
+            }
+
+            .logout-btn:active::after {
+                width: 300px;
+                height: 300px;
+            }
+
+        .nav-link.logout-btn {
+            margin: 0.25rem 0.5rem !important;
+            border: none !important;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">runningClob</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Clob" asp-action="Index">Club</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Race" asp-action="Index">Race</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="User" asp-action="Index">Users</a>
+                        </li>
+
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="DashBoard" asp-action="Index">Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <form id="logoutForm" asp-controller="Account" asp-action="Logout" method="post">
+                                    <button type="submit" class="nav-link logout-btn" id="logoutButton">
+                                        Logout (@User.Identity.Name)
+                                    </button>
+                                </form>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Login">Login</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Account" asp-action="Register">Register</a>
+                            </li>
+                        }
+
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2025 - runningClob - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutButton = document.getElementById('logoutButton');
+
+            if (logoutButton) {
+                logoutButton.addEventListener('click', function(e) {
+                    // Add clicked class for visual feedback
+                    this.classList.add('clicked');
+
+                    // Optional: Add a small delay before actual form submission
+                    setTimeout(() => {
+                        // The form will submit normally
+                    }, 500);
+                });
+            }
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

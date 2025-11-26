@@ -1,0 +1,112 @@
+﻿@model runningClob.ViewModels.UserVm
+
+@{
+    ViewData["Title"] = $"{Model.UserName}'s Profile";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">User Profile</h4>
+                        <span class="badge bg-light text-dark">ID: @Model.Id</span>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h3 class="text-primary">@Model.UserName</h3>
+                            <hr>
+
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <div class="stat-card text-center p-3 mb-3 bg-light rounded">
+                                        <h5 class="text-muted">Pace</h5>
+                                        <h3 class="text-success">@(Model.pace?.ToString() ?? "Not set")</h3>
+                                        <small class="text-muted">min/mile</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="stat-card text-center p-3 mb-3 bg-light rounded">
+                                        <h5 class="text-muted">Mileage</h5>
+                                        <h3 class="text-primary">@(Model.Mileage?.ToString() ?? "Not set")</h3>
+                                        <small class="text-muted">miles</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 text-center">
+                            <div class="profile-image mb-3">
+                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center bg-secondary"
+                                     style="width: 120px; height: 120px; overflow: hidden; border: 3px solid #007bff;">
+                                    @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
+                                    {
+                                        <!-- Show profile image with error fallback -->
+                                        <img src="@Model.ProfileImageUrl"
+                                             alt="@Model.UserName's profile picture"
+                                             style="width: 100%; height: 100%; object-fit: cover;"
+                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+
+                                        <!-- Fallback that shows only if image fails to load -->
+                                        <div class="text-white fs-2 fw-bold position-absolute"
+                                             style="display: none; width: 120px; height: 120px; align-items: center; justify-content: center;">
+                                            @if (!string.IsNullOrEmpty(Model.UserName))
+                                            {
+                                                @Model.UserName[0]
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <!-- Show first character if no image URL -->
+                                        <span class="text-white fs-2 fw-bold">
+                                            @if (!string.IsNullOrEmpty(Model.UserName))
+                                            {
+                                                @Model.UserName[0]
+                                            }
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            ← Back to Users
+                        </a>
+                        <div>
+                            <!-- Optional: Add Edit button if you have edit functionality -->
+                            @* <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edit Profile</a> *@
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stat-card {
+        transition: transform 0.2s;
+        border: 1px solid #dee2e6;
+    }
+
+        .stat-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+    .profile-image {
+        border: 3px solid #007bff;
+        border-radius: 50%;
+        padding: 5px;
+        display: inline-block;
+    }
+</style>

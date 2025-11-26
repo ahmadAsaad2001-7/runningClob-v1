@@ -1,0 +1,75 @@
+﻿@using runningClob.Data.Enum
+@using runningClob.ViewModels
+@model EditRaceViewModel
+@if (Model == null)
+{
+    <div class="alert alert-danger">
+        <h4>Error: Model is null</h4>
+        <p>The club data could not be loaded. Please check if the club exists.</p>
+        <a asp-action="Index" class="btn btn-primary">Back to Clubs</a>
+    </div>
+    return;
+}
+<form method="post" asp-action="Edit" enctype="multipart/form-data">
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="AddressId" />
+    <input type="hidden" asp-for="Image" /> <!-- Keep current image as fallback -->
+
+    <div class="form-group">
+        <label asp-for="Title">Title</label>
+        <input asp-for="Title" class="form-control" placeholder="Title">
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Description">Description</label>
+        <input asp-for="Description" class="form-control" placeholder="Description">
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="raceCategory">race Category</label>
+        <select asp-for="raceCategory" asp-items="@Html.GetEnumSelectList<RaceCategory>()" class="form-control">
+            <option selected="selected" value="">--Select--</option>
+        </select>
+        <span asp-validation-for="raceCategory" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Street">Street</label>
+        <input asp-for="Street" class="form-control" placeholder="Street">
+        <span asp-validation-for="Street" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="City">City</label>
+        <input asp-for="City" class="form-control" placeholder="City">
+        <span asp-validation-for="City" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="State">State</label>
+        <input asp-for="State" class="form-control" placeholder="State">
+        <span asp-validation-for="State" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Country">country</label>
+        <input asp-for="Country" class="form-control" placeholder="enter country"></input>
+        <span asp-validation-for="Country" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="ZipCode">Zip Code</label>
+        <input asp-for="ZipCode" class="form-control" placeholder="Zip Code">
+        <span asp-validation-for="ZipCode" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="NewImage">New Image</label>
+        <input asp-for="NewImage" type="file" class="form-control">
+        <span asp-validation-for="NewImage" class="text-danger"></span>
+        <!-- Show current image -->
+        @if (!string.IsNullOrEmpty(Model.Image))
+        {
+            <div class="mt-2">
+                <label>Current Image:</label>
+                <img src="@Model.Image" alt="Current race image" style="max-width: 200px; max-height: 200px;" />
+            </div>
+        }
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>

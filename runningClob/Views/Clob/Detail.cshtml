@@ -1,0 +1,183 @@
+﻿@model runningClob.Models.Club
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="main-container">
+    <nav aria-label="breadcrumb" role="navigation" class="bg-primary text-white">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                        <li class="breadcrumb-item"><a asp-controller="Clob" asp-action="Index">Find</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Running Clubs in @Model.Address?.City,=> @Model.Address?.State, =>@Model.Address?.Country</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="bg-white space-sm">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-7 mb-4 mb-sm-0">
+                    @if (!string.IsNullOrEmpty(Model.Image))
+                    {
+                        <img alt="@Model.Title" src="@Model.Image" class="rounded img-fluid" />
+                    }
+                    else
+                    {
+                        <div class="rounded img-fluid bg-light d-flex justify-content-center align-items-center" style="height: 100%; min-height: 300px;">
+                            <span class="text-muted">No image available</span>
+                        </div>
+                    }
+                </div>
+                <div class="col-lg-4 d-flex flex-column justify-content-between mr-auto ml-auto">
+                    <div>
+                        <h1 class="mb-2">@Model.Title</h1>
+                        <h2 class="lead mb-3">@Model.Address?.City, @Model.Address?.State</h2>
+                        <div>
+                            <span class="badge badge-secondary mr-3">@Model.ClubCategory</span>
+                        </div>
+                        <div>
+                            <ul class="list-inline text-small d-inline-block mb-3">
+                                <li class="list-inline-item"><i class="icon-thumbs-up"></i> 214</li>
+                                <li class="list-inline-item"><i class="icon-message"></i> 6</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="btn-group mb-2">
+                            <button type="button" class="btn btn-success btn-lg">Join Club</button>
+                            <button type="button" class="btn btn-success dropdown-toggle dropdown-toggle-split dropdown-toggle-no-arrow" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="icon-dots-three-horizontal"></i>
+                                <span class="sr-only">Toggle Dropdown</span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-right dropdown-menu-sm">
+                                <a class="dropdown-item" href="#">Share</a>
+                                <a class="dropdown-item" href="#">Report</a>
+                                @if (User.Identity.IsAuthenticated && (User.IsInRole("admin") || User.Identity.Name == Model.AppUser?.UserName))
+                                {
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" asp-action="Edit" asp-route-id="@Model.Id">Edit Club</a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="space-sm">
+        <div class="container">
+            <div class="row justify-content-between">
+                <div class="col-12 col-md-8 col-lg-7">
+                    <h5 class="mb-4">Overview</h5>
+                    <article>
+                        @Html.Raw(Model.Description)
+                    </article>
+                    <hr>
+                    <h5 class="mb-4">Location</h5>
+                    <div class="mb-4">
+                        @if (Model.Address != null)
+                        {
+                            <address>
+                                @Model.Address.Street<br>
+                                @Model.Address.City, @Model.Address.State @Model.Address.ZipCode<br>
+                            </address>
+                            <div id="map" style="height: 300px; width: 100%;" class="rounded"></div>
+                        }
+                        else
+                        {
+                            <p>No address information available.</p>
+                        }
+                    </div>
+                    <hr>
+                    <h5 class="mb-4">Discussion</h5>
+                    <div class="card">
+                        <div class="card-header bg-secondary d-flex justify-content-between">
+                            <button class="btn btn-secondary" type="button" data-target="#comment-reply" data-toggle="collapse" aria-expanded="false" aria-controls="comment-reply">Post a reply</button>
+                            <form class="d-flex align-items-center">
+                                <span class="mr-2 text-muted text-small text-nowrap">Sort by:</span>
+                                <select class="custom-select">
+                                    <option value="alpha">Alphabetical</option>
+                                    <option value="old-new" selected>Newest</option>
+                                    <option value="new-old">Popular</option>
+                                    <option value="recent">Recently Updated</option>
+                                </select>
+                            </form>
+                        </div>
+                        <div class="collapse" id="comment-reply">
+                            <form class="card-body">
+                                <div class="form-group">
+                                    <textarea class="form-control from-control-lg" id="comment-reply-text" name="comment-reply" rows="4" placeholder="Type your reply here"></textarea>
+                                </div>
+                                <div class="mb-2">
+                                    <div class="custom-control custom-checkbox">
+                                        <input type="checkbox" class="custom-control-input" name="notify-reply" id="check-notify">
+                                        <label class="custom-control-label text-small" for="check-notify">Notify me when someone replies</label>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <button type="submit" class="btn btn-success mr-3">Submit reply</button>
+                                    <a href="#comment-reply" class="text-small text-muted" data-toggle="collapse" aria-expanded="true" aria-controls="comment-reply">Cancel</a>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="list-group list-group-flush">
+                            <!-- Sample comment - replace with actual comments from your model -->
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">John Doe</small>
+                                    <small class="text-muted">3 days ago</small>
+                                </div>
+                                <p class="mb-1">Great club! I've been running with them for months.</p>
+                                <small><a href="#" class="text-muted">Reply</a></small>
+                            </div>
+                            <!-- Add more comments here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="mb-3">Club Details</h6>
+                            <dl class="row mb-0">
+                                <dt class="col-5">Category:</dt>
+                                <dd class="col-7">@Model.ClubCategory</dd>
+
+                                <dt class="col-5">Members:</dt>
+                                <dd class="col-7">214</dd>
+
+                                <dt class="col-5">Founded:</dt>
+                                <dd class="col-7">2020</dd>
+
+                                <dt class="col-5">Organizer:</dt>
+                                <dd class="col-7">@Model.AppUser?.UserName</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        // Initialize map if address exists
+        @if (Model.Address != null)
+        {
+            <text>
+                function initMap() {
+                    // You'll need to implement your map initialization here
+                    // This is just a placeholder for the map functionality
+                    console.log("Map would be initialized for:", "@Model.Address.City");
+                }
+                document.addEventListener('DOMContentLoaded', initMap);
+            </text>
+        }
+    </script>
+}
