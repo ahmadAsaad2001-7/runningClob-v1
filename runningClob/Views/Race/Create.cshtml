@@ -1,20 +1,22 @@
 ﻿@using runningClob.Data.Enum
+@using runningClob.Services
 @model runningClob.ViewModels.CreateRaceViewModel
+@inject ICountryAliasService CountryAliasService
 @{
-    ViewData["Title"] = "Create Race";
+    ViewData["Title"] = "Create race";
 }
 
 <form method="post" asp-action="Create" enctype="multipart/form-data">
 
     <div class="form-group">
         <label asp-for="Title">Title</label>
-        <input asp-for="Title" class="form-control" placeholder="Enter Race title">
+        <input asp-for="Title" class="form-control" placeholder="Enter race title">
         <span asp-validation-for="Title" class="text-danger"></span>
     </div>
 
     <div class="form-group">
         <label asp-for="Description">Description</label>
-        <textarea asp-for="Description" class="form-control" placeholder="Enter Race description"></textarea>
+        <textarea asp-for="Description" class="form-control" placeholder="Enter race description"></textarea>
         <span asp-validation-for="Description" class="text-danger"></span>
     </div>
 
@@ -36,11 +38,29 @@
         <input asp-for="Street" class="form-control" placeholder="Enter street address">
         <span asp-validation-for="Street" class="text-danger"></span>
     </div>
+
+
     <div class="form-group">
-        <label asp-for="Country">country</label>
-        <input asp-for="Country" class="form-control" placeholder="enter country"></input>
+        <label asp-for="Country">Country</label>
+        <select asp-for="Country" class="form-control">
+            <option value="">Select Country</option>
+            @foreach (var country in CountryAliasService.GetCountryAliases("US")
+                        .Concat(CountryAliasService.GetCountryAliases("GB"))
+                        .Concat(CountryAliasService.GetCountryAliases("CA"))
+                        .Concat(CountryAliasService.GetCountryAliases("AU"))
+                        .Concat(CountryAliasService.GetCountryAliases("EG"))
+                        .Concat(CountryAliasService.GetCountryAliases("SA"))
+                        .Concat(CountryAliasService.GetCountryAliases("AE"))
+                        .Distinct()
+                        .OrderBy(c => c))
+            {
+                <option value="@country">@country</option>
+            }
+
+        </select>
         <span asp-validation-for="Country" class="text-danger"></span>
     </div>
+
     <div class="form-group">
         <label asp-for="City">City</label>
         <input asp-for="City" class="form-control" placeholder="Enter city">
@@ -59,5 +79,5 @@
         <span asp-validation-for="ZipCode" class="text-danger"></span>
     </div>
 
-    <button type="submit" class="btn btn-primary">Create Race</button>
+    <button type="submit" class="btn btn-primary">Create race</button>
 </form>

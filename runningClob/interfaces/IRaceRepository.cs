@@ -29,5 +29,6 @@ namespace runningClob.interfaces
 
         bool Save();
         Task<bool> SaveAsync();
+        Task<IEnumerable<Race>> GetRacesByCountryAsync(string country);
     }
 }

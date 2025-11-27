@@ -20,7 +20,7 @@ namespace runningClob.ViewModels
         public string Description { get; set; }
 
         [Required(ErrorMessage = "Category is required")]
-        public RaceCategory raceCategory { get; set; }
+        public RaceCategory RaceCategory { get; set; }
 
         // For displaying current image
         public string Image { get; set; }

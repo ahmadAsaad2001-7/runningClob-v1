@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using runningClob.Data;
 using runningClob.interfaces;
 using runningClob.Models;
+using runningClob.repository.RaceRepositroy;
 using runningClob.Services;
 using runningClob.ViewModels;
 using System.Collections.Generic;
@@ -20,7 +21,8 @@ namespace runningClob.Controllers
         private readonly ILogger<RaceController> _logger;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IGeolocationService _geolocationService;
-        public RaceController(AppDbContext context, IRaceRepository raceRepository, IPhotoService photoService , ILogger<RaceController> logger,IHttpContextAccessor httpContextAccessor,IGeolocationService geolocationService)
+        private readonly ICountryAliasService _countryAliasService;
+        public RaceController(AppDbContext context, IRaceRepository raceRepository, IPhotoService photoService,ICountryAliasService countryAliasService , ILogger<RaceController> logger,IHttpContextAccessor httpContextAccessor,IGeolocationService geolocationService)
         {
             _httpContextAccessor = httpContextAccessor;
             _context = context;
@@ -28,6 +30,7 @@ namespace runningClob.Controllers
             _photoService = photoService;
             _logger = logger;
             _geolocationService = geolocationService;
+            _countryAliasService = countryAliasService;
         }
 
         public async Task<IActionResult> Index()
@@ -37,24 +40,51 @@ namespace runningClob.Controllers
         }
 
         // GET: Add this action to display the form
+        // Updated RaceController Create method
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
             _logger.LogInformation("GET Create - User: {UserName}", User.Identity.Name);
 
-            // Just create an empty ViewModel - no need to set AppUserId
             var raceVM = new CreateRaceViewModel();
+
+            try
+            {
+                // Get location from IP
+                var ipInfo = await _geolocationService.GetLocationByIPAsync();
+
+                if (ipInfo != null && ipInfo.City != "Unknown")
+                {
+                    var countryCode = ipInfo.Country; // IPInfo returns 2-letter code
+
+                    // Convert country code to friendly name for display
+                    raceVM.Country = _countryAliasService.GetFriendlyCountryName(countryCode);
+                    raceVM.City = ipInfo.City;
+                    raceVM.State = ipInfo.Region;
+
+                    _logger.LogInformation("📍 Auto-populated location: {City}, {State}, {Country}",
+                        ipInfo.City, ipInfo.Region, raceVM.Country);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting location from IP");
+            }
+
             return View(raceVM);
         }
+
         [HttpPost]
         public async Task<IActionResult> Create(CreateRaceViewModel raceVM)
         {
-            _logger.LogInformation("=== CREATE race STARTED ===");
+
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            _logger.LogInformation("=== CREATE Race STARTED ===");
 
             // 🎯 DETAILED VALIDATION LOGGING
             if (!ModelState.IsValid)
             {
-                _logger.LogError("❌ MODEL VALIDATION FAILED - DETAILED ERRORS:");
+                _logger.LogError(" MODEL VALIDATION FAILED - DETAILED ERRORS:");
 
                 foreach (var key in ModelState.Keys)
                 {
@@ -65,7 +95,6 @@ namespace runningClob.Controllers
                     }
                 }
 
-                // 🎯 LOG ACTUAL FIELD VALUES FOR DEBUGGING
                 _logger.LogInformation("📝 ACTUAL FIELD VALUES RECEIVED:");
                 _logger.LogInformation("   Title: {Title}", raceVM.Title ?? "NULL");
                 _logger.LogInformation("   Description: {Description}", raceVM.Description ?? "NULL");
@@ -81,12 +110,14 @@ namespace runningClob.Controllers
 
             try
             {
+                var normalizedCountry = _countryAliasService.NormalizeCountry(raceVM.Country);
+
                 // Your existing creation logic here...
-                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                
 
                 if (string.IsNullOrEmpty(currentUserId))
                 {
-                    ModelState.AddModelError("", "You must be logged in to create a race");
+                    ModelState.AddModelError("", "You must be logged in to create a Race");
                     return View(raceVM);
                 }
 
@@ -120,7 +151,7 @@ namespace runningClob.Controllers
                         Street = raceVM.Street,
                         City = raceVM.City,
                         State = raceVM.State,
-                        Country = raceVM.Country,
+                        Country = normalizedCountry,
                         ZipCode = raceVM.ZipCode
                     }
                 };
@@ -128,17 +159,18 @@ namespace runningClob.Controllers
                 _context.Races.Add(race);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("✅ race CREATED SUCCESSFULLY - ID: {raceId}", race.Id);
+                _logger.LogInformation("✅ Race CREATED SUCCESSFULLY - ID: {RaceId}", race.Id);
                 return RedirectToAction("Index");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ ERROR CREATING race");
-                ModelState.AddModelError("", "An error occurred while creating the race: " + ex.Message);
+                _logger.LogError(ex, "❌ ERROR CREATING Race");
+                ModelState.AddModelError("", "An error occurred while creating the Race: " + ex.Message);
                 return View(raceVM);
             }
         }
-        [HttpPost]
+
+        
         [HttpPost]
         public async Task<IActionResult> Edit(int id, EditRaceViewModel raceVM)
         {
@@ -216,7 +248,7 @@ namespace runningClob.Controllers
                 // Update race properties
                 userRace.Title = raceVM.Title;
                 userRace.Description = raceVM.Description;
-                userRace.RaceCategory = raceVM.raceCategory; // Fixed casing: raceCategory -> RaceCategory
+                userRace.RaceCategory = raceVM.RaceCategory; // Fixed casing: raceCategory -> RaceCategory
 
                 _logger.LogInformation("Updated race properties - Title: {Title}, Category: {Category}",
                     userRace.Title, userRace.RaceCategory);
@@ -334,6 +366,133 @@ namespace runningClob.Controllers
                 TempData["ErrorMessage"] = "An error occurred while deleting the race";
                 return RedirectToAction("Index");
             }
+        }
+        [HttpGet]
+        public async Task<IActionResult> Detail(int id)
+        {
+            _logger.LogInformation("Viewing race details for ID: {RaceId}", id);
+
+            try
+            {
+                var race = await _raceRepository.GetByIdAsync(id);
+                if (race == null)
+                {
+                    _logger.LogWarning("Race not found for detail view, ID: {RaceId}", id);
+                    return NotFound();
+                }
+
+                _logger.LogInformation("Displaying race details: {raceTitle}", race.Title);
+                return View(race);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving race details for ID: {RaceId}", id);
+                return View("Error");
+            }
+        }
+        [HttpGet]
+        public async Task<IActionResult> FilterRacesByCountry(string country)
+        {
+            _logger.LogInformation("🌐 AJAX RACE FILTER: Request for country: '{Country}'", country);
+
+            try
+            {
+                var countryRaces = await _raceRepository.GetRacesByCountryAsync(country);
+
+                _logger.LogInformation("🌐 AJAX RACE FILTER: Repository returned {Count} races", countryRaces?.Count() ?? 0);
+
+                if (countryRaces == null || !countryRaces.Any())
+                {
+                    _logger.LogWarning("🌐 AJAX RACE FILTER: No races found for country '{Country}'", country);
+
+                    return Content(@"
+            <div class='col-12 text-center'>
+                <div class='alert alert-warning'>
+                    <i class='fas fa-info-circle'></i> No races found in <strong>" + country + @"</strong>.
+                    <br><small>Try a different country or <a href='javascript:location.reload()'>show all races</a></small>
+                </div>
+            </div>");
+                }
+
+                _logger.LogInformation("🌐 AJAX RACE FILTER: Successfully found {Count} races for country '{Country}'",
+                    countryRaces.Count(), country);
+
+                // Return partial HTML with filtered races
+                return PartialView("_RaceListPartial", countryRaces);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ AJAX RACE FILTER: Error for country: {Country}", country);
+                return Content(@"
+        <div class='col-12 text-center'>
+            <div class='alert alert-danger'>
+                <i class='fas fa-exclamation-triangle'></i> Error loading races. Please try again.
+            </div>
+        </div>");
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetRacesByCountryAsync(string country)
+        {
+            _logger.LogInformation("🎯 SIMPLE RACE FILTER: Searching for races in: '{Country}'", country);
+
+            // If no country specified, show empty page with form
+            if (string.IsNullOrWhiteSpace(country))
+            {
+                _logger.LogInformation("🎯 SIMPLE RACE FILTER: No country specified, showing filter form");
+                return View(new List<Race>());
+            }
+
+            try
+            {
+                _logger.LogInformation("🎯 SIMPLE RACE FILTER: Calling repository with: '{Country}'", country);
+
+                // Use the repository method
+                var races = await _raceRepository.GetRacesByCountryAsync(country);
+
+                _logger.LogInformation("🎯 SIMPLE RACE FILTER: Repository returned {Count} races", races?.Count() ?? 0);
+
+                if (races == null || !races.Any())
+                {
+                    _logger.LogWarning("🎯 SIMPLE RACE FILTER: No races found for '{Country}'", country);
+                    ViewBag.Message = $"No races found in {country}";
+                    return View(new List<Race>());
+                }
+
+                _logger.LogInformation("🎯 SIMPLE RACE FILTER: Success! Found {Count} races in '{Country}'", races.Count(), country);
+                ViewBag.Message = $"Found {races.Count()} races in {country}";
+                return View(races);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ SIMPLE RACE FILTER: Error searching for races in '{Country}'", country);
+                ViewBag.Message = "An error occurred while searching for races";
+                return View(new List<Race>());
+            }
+        }
+        [HttpGet]
+        public async Task<JsonResult> GetUserCountry()
+        {
+            try
+            {
+                var ipInfo = await _geolocationService.GetLocationByIPAsync();
+                if (ipInfo != null && !string.IsNullOrEmpty(ipInfo.Country))
+                {
+                    var friendlyName = _countryAliasService.GetFriendlyCountryName(ipInfo.Country);
+                    return Json(new
+                    {
+                        success = true,
+                        country = ipInfo.Country,
+                        countryName = friendlyName
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get user country for AJAX request");
+            }
+            return Json(new { success = false });
         }
     }
 }

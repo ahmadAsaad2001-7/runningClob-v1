@@ -30,6 +30,6 @@ namespace runningClob.ViewModels
         [Required(ErrorMessage = "Zip code is required")]
         public int ZipCode { get; set; }
         public string Country { get; set; }
-        public string AppUserId { get; set; }
+      
     }
 }

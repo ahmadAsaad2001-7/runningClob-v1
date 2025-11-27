@@ -88,7 +88,7 @@ public class ClobController : Controller
                 var countryCode = ipInfo.Country; // IPInfo returns 2-letter code
 
                 // Convert country code to friendly name for display
-                clubVM.Country = GetFriendlyCountryName(countryCode);
+                clubVM.Country = _countryAliasService.GetFriendlyCountryName(countryCode);
                 clubVM.City = ipInfo.City;
                 clubVM.State = ipInfo.Region;
 
@@ -197,13 +197,8 @@ public class ClobController : Controller
                 return View(clubVM);
             }
         }
-    
-    private string GetFriendlyCountryName(string countryCode)
-    {
-        // Return the most common alias for display purposes
-        var aliases = _countryAliasService.GetCountryAliases(countryCode);
-        return aliases.FirstOrDefault() ?? countryCode;
-    }
+
+ 
     [HttpPost]
     public async Task<IActionResult> Edit(int id, EditClubViewModel clubVM)
     {
@@ -430,7 +425,7 @@ public class ClobController : Controller
             if (ipInfo != null && !string.IsNullOrEmpty(ipInfo.Country))
             {
                 // Convert country code to friendly name
-                var friendlyName = GetFriendlyCountryName(ipInfo.Country);
+                var friendlyName = _countryAliasService.GetFriendlyCountryName(ipInfo.Country);
 
                 return Json(new
                 {

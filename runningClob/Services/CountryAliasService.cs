@@ -6,6 +6,7 @@
         string GetCountryCode(string countryInput);
         List<string> GetCountryAliases(string countryCode);
         public List<string> GetCommonCountryNames();
+        public string GetFriendlyCountryName(string countryCode);
     }
 
     public class CountryAliasService : ICountryAliasService
@@ -77,6 +78,12 @@
                 .Distinct()
                 .OrderBy(x => x)
                 .ToList();
+        }
+        public string GetFriendlyCountryName(string countryCode)
+        {
+            // Return the most common alias for display purposes
+            var aliases = GetCountryAliases(countryCode);
+            return aliases.FirstOrDefault() ?? countryCode;
         }
     }
 }
